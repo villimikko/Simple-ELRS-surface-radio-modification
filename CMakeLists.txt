@@ -41,15 +41,15 @@ add_executable(elrs-surface-radio
     src/mixer.c
     src/shared.c
     src/buttons.c
-    # Unused in KISS mode but kept for future:
-    # src/config.c
-    # src/ina219.c
-    # src/oled.c
-    # src/encoder.c
-    # src/calibrate.c
-    # src/display.c
-    # src/menu.c
-    # src/pages.c
+    # Unused in KISS mode — moved to src/unused/
+    # src/unused/config.c
+    # src/unused/ina219.c
+    # src/unused/oled.c
+    # src/unused/encoder.c
+    # src/unused/calibrate.c
+    # src/unused/display.c
+    # src/unused/menu.c
+    # src/unused/pages.c
 )
 
 # Generate PIO header for WS2812 LED driver
