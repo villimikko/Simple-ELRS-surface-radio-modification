@@ -31,6 +31,11 @@
 // Link timeout: if no telemetry for 2 seconds, consider link lost
 #define LINK_TIMEOUT_US     2000000
 
+// 2S LiPo battery thresholds (millivolts, from receiver telemetry)
+#define VBAT_WARNING_MV     7000    // 3.5V/cell — purple flash warning
+#define VBAT_CRAWL_MV       6000    // 3.0V/cell — crawl mode (10% throttle)
+#define CRAWL_SPEED_LIMIT   0.10f   // max throttle in crawl mode
+
 // Hardcoded calibration
 static const cal_pot_t cal_steer      = CAL_STEERING;
 static const cal_pot_t cal_throttle   = CAL_THROTTLE;
@@ -49,15 +54,29 @@ int main(void) {
     led_starting();  // orange = booting
 
     // Check encoder button (GP4) at boot: held = WiFi mode (no CRSF)
+    // Sample multiple times to avoid false trigger from picotool reboot glitch
     gpio_init(PIN_ENC_SW);
     gpio_set_dir(PIN_ENC_SW, GPIO_IN);
     gpio_pull_up(PIN_ENC_SW);
-    sleep_ms(10);  // debounce settle
+    sleep_ms(50);  // pull-up settle
 
-    if (!gpio_get(PIN_ENC_SW)) {
+    int btn_low = 0;
+    for (int i = 0; i < 5; i++) {
+        if (!gpio_get(PIN_ENC_SW)) btn_low++;
+        sleep_ms(10);
+    }
+    printf("GP4 check: %d/5 low\n", btn_low);
+
+    if (btn_low >= 4) {
         // Button held at boot → WiFi mode
         // Never start CRSF so TX module enters WiFi after ~60s
-        printf("WiFi mode — CRSF disabled, TX will enter WiFi\n");
+        // Wait 30s before showing blue — avoids false visual on glitchy boot
+        printf("WiFi mode — CRSF disabled, waiting 30s...\n");
+        for (int i = 0; i < 60; i++) {
+            sleep_ms(500);
+            tud_task();
+        }
+        printf("TX should enter WiFi soon\n");
         uint8_t blink = 0;
         while (true) {
             blink++;
@@ -128,6 +147,11 @@ int main(void) {
             if (speed_limit < 0.0f) speed_limit = 0.0f;
             if (speed_limit > 1.0f) speed_limit = 1.0f;
 
+            // Battery crawl mode overrides speed limit
+            bool crawl_mode = (telem.vbat_mv > 0 && telem.vbat_mv < VBAT_CRAWL_MV);
+            if (crawl_mode && speed_limit > CRAWL_SPEED_LIMIT)
+                speed_limit = CRAWL_SPEED_LIMIT;
+
             // Apply speed limit: scale throttle deviation from center
             float throt_dev = (float)((int)ch_throt - CRSF_CHANNEL_CENTER);
             throt_dev *= speed_limit;
@@ -168,9 +192,26 @@ int main(void) {
             next_led += LED_INTERVAL_US;
             led_blink++;
 
+            bool vbat_warn = (telem.vbat_mv > 0 && telem.vbat_mv < VBAT_WARNING_MV);
+            bool vbat_crawl = (telem.vbat_mv > 0 && telem.vbat_mv < VBAT_CRAWL_MV);
+
             if (link_up) {
-                // Connected: solid green
-                led_set_rgb(0, 20, 0);
+                if (vbat_crawl) {
+                    // Crawl mode: fast purple blink
+                    if (led_blink & 1)
+                        led_set_rgb(20, 0, 20);  // purple
+                    else
+                        led_set_rgb(0, 0, 0);
+                } else if (vbat_warn) {
+                    // Low battery: alternate green/purple
+                    if (led_blink & 1)
+                        led_set_rgb(0, 20, 0);   // green
+                    else
+                        led_set_rgb(20, 0, 20);  // purple
+                } else {
+                    // Connected: solid green
+                    led_set_rgb(0, 20, 0);
+                }
             } else {
                 // No link: blink red
                 if (led_blink & 1) {
