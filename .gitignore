@@ -4,3 +4,4 @@ build_test/
 .venv/
 .vscode/
 *.uf2
+hw_test_folder/

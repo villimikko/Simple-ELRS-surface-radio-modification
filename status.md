@@ -1,9 +1,11 @@
-basic features seems to work.  we are waiting for the replacment screen to arrive so we can test the display. 
+Current firmware status:
 
+- Active firmware is the KISS build with the internal Waveshare ST7789 RGB LCD enabled.
+- Boot flow is `ARM ON -> DRIVE` and `ARM OFF -> WiFi standby after 60 seconds`.
+- Steering trim offsets CH1 directly.
+- Throttle trim is intentionally a speed limiter, not a throttle-center trim.
+- Basic drive, screen, telemetry display, and WiFi standby flow are working in the active build.
 
-seems like the Throttle trim is not working as expected. it suppose to trim the throttle input to a certain range, but it is not doing that. I will need to investigate further to see what is going on.
+Still future work:
 
-
-
-
-we need to implement proper internel elrs communication similar to edgetx lua sript. so that we get settings visible for us. 
+- Proper internal ELRS settings/config communication similar to the EdgeTX Lua flow is not implemented yet.

@@ -40,14 +40,15 @@ add_executable(elrs-surface-radio
     src/led.c
     src/mixer.c
     src/shared.c
+    src/screen.c
     src/buttons.c
+    src/unused/display.c
     # Unused in KISS mode — moved to src/unused/
     # src/unused/config.c
     # src/unused/ina219.c
     # src/unused/oled.c
     # src/unused/encoder.c
     # src/unused/calibrate.c
-    # src/unused/display.c
     # src/unused/menu.c
     # src/unused/pages.c
 )
@@ -67,7 +68,10 @@ target_link_libraries(elrs-surface-radio
     pico_multicore
     hardware_uart
     hardware_adc
+    hardware_spi
+    hardware_dma
     hardware_gpio
+    hardware_pwm
     hardware_timer
     hardware_i2c
     hardware_flash
